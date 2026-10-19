@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Ken & Zie: Abandoned Zoo</title>
+<style>
+:root{color-scheme:dark;--bg:#07090a;--fg:#d9e2dc;--mut:#7d8a82;--acc:#e8a23b;--red:#c8432f;box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 "Trebuchet MS",Verdana,sans-serif;overflow:hidden;touch-action:none}
+#stage{--b:48px;--bs:40px;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,177.78vh);height:min(56.25vw,100vh);overflow:hidden;background:#000}
+#stage.p{--b:60px;--bs:48px;width:min(100vw,56.25vh);height:min(177.78vw,100vh)}
+select{font:inherit;color:var(--fg);background:#141a17;border:1px solid #33403a;border-radius:6px;padding:6px 8px}
+canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
+.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(5,7,8,.86);z-index:20;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+.ov.h,.h{display:none!important}
+h1{font:700 clamp(30px,7vw,58px)/1 Georgia,"Times New Roman",serif;margin:0;letter-spacing:.02em;text-align:center}
+h1 small{display:block;font:400 .3em Georgia,serif;color:var(--acc);margin-top:8px;letter-spacing:.3em}
+button{font:inherit;color:var(--fg);background:#141a17;border:1px solid #33403a;border-radius:6px;padding:12px 22px;min-width:200px}
+button:active{background:var(--acc);color:#000}
+label{display:flex;gap:10px;align-items:center;justify-content:space-between;width:260px}
+p.s{color:var(--mut);max-width:420px;text-align:center;margin:0}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px}
+.bar{height:10px;width:min(240px,50%);background:#1b1f1d;border:1px solid #333}
+.bar i{display:block;height:100%;background:var(--red);width:100%}
+#st i{background:var(--acc)}
+#obj{margin-top:8px;max-width:min(340px,60%);text-shadow:0 1px 3px #000}
+#obj b{color:var(--acc)}
+#prompt{position:fixed;left:50%;top:62%;transform:translateX(-50%);background:#000a;padding:6px 14px;border-radius:4px;z-index:6}
+#sub{position:fixed;left:50%;bottom:calc(14% + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(560px,86%);text-align:center;text-shadow:0 1px 4px #000;z-index:6}
+#boss{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:50%;transform:translateX(-50%);width:min(420px,60%);z-index:6}
+#boss .bar{width:100%}
+#timer{position:fixed;top:calc(env(safe-area-inset-top) + 36px);right:14px;font:700 28px Georgia,serif;color:var(--red);z-index:6}
+#flash{position:fixed;inset:0;background:#c8432f;opacity:0;pointer-events:none;z-index:7;transition:opacity .25s}
+#pad{display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+#pad button{min-width:0;padding:16px 0;font-size:20px}
+#code{font:700 30px monospace;letter-spacing:.4em;min-height:40px}
+#mob{position:fixed;inset:0;z-index:8;pointer-events:none}
+#mob>*{pointer-events:auto;position:absolute}
+.mb{width:var(--b);height:var(--b);border-radius:50%;min-width:0;padding:0;background:#10161399;font-size:11px}
+#joy{left:calc(env(safe-area-inset-left) + 22px);bottom:calc(env(safe-area-inset-bottom) + 24px);width:116px;height:116px;border-radius:50%;border:2px solid #fff4;background:#0006}
+#knob{position:absolute;left:32px;top:32px;width:52px;height:52px;border-radius:50%;background:#fff5}
+</style></head><body><div id="stage">
+<canvas id="c"></canvas>
+<div id="hud" class="h"><div class="bar" id="hp"><i></i></div><div class="bar" id="st" style="margin-top:4px;height:6px"><i></i></div><div id="obj"></div></div>
+<div id="boss" class="h"><div style="text-align:center;font-size:13px;color:var(--mut)">The Final Subject</div><div class="bar" id="bb"><i></i></div></div>
+<div id="timer" class="h"></div><div id="prompt" class="h"></div><div id="sub"></div><div id="flash"></div>
+<div id="mob" class="h">
+<div id="joy"><div id="knob"></div></div>
+<button class="mb" id="bA" style="right:24px;bottom:calc(env(safe-area-inset-bottom) + 60px)">Serang</button>
+<button class="mb" id="bD" style="right:104px;bottom:calc(env(safe-area-inset-bottom) + 24px)">Hindar</button>
+<button class="mb" id="bE" style="right:104px;bottom:calc(env(safe-area-inset-bottom) + 108px)">Pakai</button>
+<button class="mb" id="bS" style="right:24px;bottom:calc(env(safe-area-inset-bottom) + 144px)">Lari</button>
+<button class="mb" id="bH" style="right:172px;bottom:calc(env(safe-area-inset-bottom) + 66px);width:var(--bs);height:var(--bs);font-size:10px">Claude</button>
+<button class="mb" id="bP" style="right:14px;top:calc(env(safe-area-inset-top) + 10px);width:44px;height:44px">II</button>
+</div>
+<div class="ov" id="menu"><h1>KEN &amp; ZIE<small>ABANDONED ZOO</small></h1>
+<p class="s">Lima tahun setelah kebun binatang ini ditutup, dua remaja masuk untuk mencari kebenaran.</p>
+<button id="bNew">Game Baru</button><button id="bCont">Lanjutkan</button><button id="bSet">Pengaturan</button>
+<p class="s" style="font-size:12px">PC: WASD gerak · Shift lari · Spasi hindar · E pakai · Klik serang · H bantuan Claude · Esc jeda</p></div>
+<div class="ov h" id="set"><h1 style="font-size:28px">Pengaturan</h1>
+<label>Volume utama<input type="range" id="vM" min="0" max="1" step=".05" value=".7"></label>
+<label>Musik/ambience<input type="range" id="vA" min="0" max="1" step=".05" value=".6"></label>
+<label>Efek suara<input type="range" id="vF" min="0" max="1" step=".05" value=".8"></label>
+<label>Sensitivitas kamera<input type="range" id="vS" min=".3" max="2.5" step=".1" value="1"></label>
+<label>Rasio layar<select id="vR"><option value="169">16:9 (landscape)</option><option value="916">9:16 (portrait)</option></select></label>
+<button id="bBack">Kembali</button></div>
+<div class="ov h" id="pause"><h1 style="font-size:28px">Jeda</h1><button id="bRes">Lanjut</button><button id="bCk">Ulang dari checkpoint</button><button id="bSet2">Pengaturan</button><button id="bMenu">Menu utama</button></div>
+<div class="ov h" id="term"><h1 style="font-size:24px">Terminal Navigasi</h1><p class="s">Masukkan kode 4 digit dari catatan penjaga.</p><div id="code"></div>
+<div id="pad"></div><button id="bTx">Tutup</button></div>
+<div class="ov h" id="end"><h1>Berhasil Keluar</h1><p class="s" id="stats"></p><p class="s">Fasilitas runtuh di belakang mereka. Perangkat itu masih berdenyut: label di sisinya bertuliskan “Subject 00”, bukan “Final Subject”.</p><button id="bAgain">Main lagi</button></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),T=THREE,SAVE="kenzie_save_v1";
+const touch=matchMedia("(pointer:coarse)").matches;
+const A={ctx:null,m:null,a:null,f:null,vol:{m:.7,a:.6,f:.8}};
+function audioInit(){if(A.ctx)return;try{const c=A.ctx=new(window.AudioContext||window.webkitAudioContext)();
+A.m=c.createGain();A.a=c.createGain();A.f=c.createGain();A.a.connect(A.m);A.f.connect(A.m);A.m.connect(c.destination);
+[[55,.05],[82.5,.03]].forEach(([fr,g])=>{const o=c.createOscillator(),n=c.createGain();o.frequency.value=fr;o.type="sawtooth";n.gain.value=g;
+const l=c.createBiquadFilter();l.frequency.value=180;o.connect(l);l.connect(n);n.connect(A.a);o.start()});audioVol()}catch(e){}}
+function audioVol(){if(!A.ctx)return;A.m.gain.value=A.vol.m;A.a.gain.value=A.vol.a;A.f.gain.value=A.vol.f}
+let sfxT=0;
+function sfx(fr,d=.15,type="square",g=.15){if(!A.ctx)return;const t=A.ctx.currentTime;if(t-sfxT<.03)return;sfxT=t;
+const o=A.ctx.createOscillator(),n=A.ctx.createGain();o.type=type;o.frequency.setValueAtTime(fr,t);o.frequency.exponentialRampToValueAtTime(Math.max(30,fr*.5),t+d);
+n.gain.setValueAtTime(g,t);n.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(n);n.connect(A.f);o.start(t);o.stop(t+d)}
+const R=new T.WebGLRenderer({canvas:$("c"),antialias:!touch});R.setPixelRatio(Math.min(devicePixelRatio,touch?1.5:2));
+R.shadowMap.enabled=!touch;
+const sc=new T.Scene();sc.background=new T.Color(0x0a0f12);sc.fog=new T.FogExp2(0x0a0f12,.022);
+const cam=new T.PerspectiveCamera(65,1,.1,200);
+function rs(){const s=$("stage"),w=s.clientWidth,h=s.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.fov=w<h?85:65;cam.updateProjectionMatrix()}addEventListener("resize",rs);rs();
+sc.add(new T.HemisphereLight(0x5a7a8a,0x1a1510,.6));
+const moon=new T.DirectionalLight(0x8aa4c0,.5);moon.position.set(20,40,20);moon.castShadow=!touch;sc.add(moon);
+const lab=new T.PointLight(0x66aaff,1.2,40);lab.position.set(0,5,-52);sc.add(lab);
+const alarmL=new T.PointLight(0xff2200,0,50);alarmL.position.set(0,6,-45);sc.add(alarmL);
+const solids=[],mats={};
+const mat=c=>mats[c]||(mats[c]=new T.MeshStandardMaterial({color:c,roughness:.85,metalness:.15}));
+function box(x,z,w,d,h,c,solid=true,y=0){const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat(c));m.position.set(x,y+h/2,z);m.castShadow=m.receiveShadow=true;sc.add(m);
+const s={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,m};if(solid)solids.push(s);return s}
+const ground=new T.Mesh(new T.PlaneGeometry(200,220),mat(0x2a2f27));ground.rotation.x=-Math.PI/2;ground.position.z=-25;ground.receiveShadow=true;sc.add(ground);
+box(0,0,6,70,.05,0x3a3d3a,false);box(0,-52,28,40,.05,0x20282c,false);
+box(-17,24,28,1,4,0x4a3a2c);box(17,24,28,1,4,0x4a3a2c);box(-3.1,24,.4,1,5,0x6a3a20,false);box(3.1,24,.4,1,5,0x6a3a20,false);
+box(-30,-25,1,100,4,0x3a3d38);box(30,-25,1,100,4,0x3a3d38);box(0,-75,60,1,5,0x30363a);
+box(-15,3,8,.6,3,0x555a55);box(-19,0,.6,6,3,0x555a55);box(-15,-3,8,.6,3,0x555a55);
+box(-20,-16,8,.6,3,0x4d5a55);box(-24,-19,.6,6,3,0x4d5a55);box(-16,-19,.6,6,3,0x4d5a55);
+box(15,-2,1.2,1.2,1.6,0x224433);
+box(-16.5,-30,27,1.5,5,0x3c444a);box(16.5,-30,27,1.5,5,0x3c444a);
+const door=box(0,-30,6,1.5,5,0x802020);
+box(8,12,3,5,1.6,0x5a4a3a);box(-9,-8,3.4,2,1.4,0x3a4a52);
+const rnd=(()=>{let s=7;return()=>(s=s*16807%2147483647)/2147483647})();
+{const tr=new T.InstancedMesh(new T.CylinderGeometry(.3,.5,5,6),mat(0x2b2118),40),cr=new T.InstancedMesh(new T.ConeGeometry(2.2,5,6),mat(0x1f3a22),40),d=new T.Object3D();let i=0;
+while(i<40){const x=(rnd()-.5)*56,z=22-rnd()*50;if(Math.abs(x)<7||(x<-12&&x>-26&&z<5&&z>-22)||z<-28)continue;
+d.position.set(x,2.5,z);d.updateMatrix();tr.setMatrixAt(i,d.matrix);d.position.y=6.5;d.updateMatrix();cr.setMatrixAt(i,d.matrix);
+solids.push({x0:x-.5,x1:x+.5,z0:z-.5,z1:z+.5});i++}sc.add(tr,cr)}
+box(-11,-58,1.5,1.5,1.4,0x225555);box(11,-58,1.5,1.5,1.4,0x225555);box(0,-42,2,2,1,0x333b40);
+const devMesh=new T.Mesh(new T.IcosahedronGeometry(.45,1),new T.MeshStandardMaterial({color:0x55ffcc,emissive:0x22aa88}));devMesh.position.set(0,1.6,-42);sc.add(devMesh);
+const items={map:box(-15,1.5,.5,.5,.5,0xddaa44,false,1),note:box(-17.5,-1,.5,.5,.5,0xffffff,false,1),key:box(-20,-17,.5,.5,.5,0x44aaff,false,1)};
+function human(col,hc){const g=new T.Group(),p={};
+const mk=(w,h,d,y,c,x)=>{const q=new T.Group();q.position.set(x,y,0);const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat(c));m.position.y=-h/2;m.castShadow=true;q.add(m);g.add(q);return q};
+p.body=new T.Mesh(new T.BoxGeometry(.6,.8,.35),mat(col));p.body.position.y=1.25;p.body.castShadow=true;g.add(p.body);
+const hd=new T.Mesh(new T.SphereGeometry(.22,10,8),mat(hc));hd.position.y=1.9;g.add(hd);
+p.lA=mk(.16,.7,.16,1.6,col,-.4);p.rA=mk(.16,.7,.16,1.6,col,.4);p.lL=mk(.2,.85,.2,.85,0x222831,-.15);p.rL=mk(.2,.85,.2,.85,0x222831,.15);g.userData=p;sc.add(g);return g}
+const ken=human(0xc87a2b,0xe0b894),zie=human(0x7a4aa8,0xd9a98a);
+const fl=new T.SpotLight(0xfff2c8,1.4,28,.5,.5);ken.add(fl);fl.position.set(0,1.7,0);fl.target.position.set(0,1,-8);ken.add(fl.target);
+function animate(g,sp,t,atk){const p=g.userData,s=Math.sin(t*(6+sp*.7))*Math.min(sp/4,1)*.9;p.lL.rotation.x=s;p.rL.rotation.x=-s;p.lA.rotation.x=-s*.8;p.rA.rotation.x=atk>0?-1.8+(1-atk)*2:s*.8;p.body.position.y=1.25+(sp>.5?Math.abs(s)*.06:Math.sin(t*2)*.01)}
+const F={map:0,note:0,power:0,key:0,door:0,dev:0,bossDead:0,hasDev:0,stalkerDead:0};
+const P={x:0,z:30,vx:0,vz:0,hp:100,st:100,yaw:0,face:Math.PI,pitch:.35,state:"move",t:0,atkT:0,inv:0,ck:{x:0,z:30}};
+const ST={time:0,kills:0};let mode="menu",escT=0,alarm=0,sens=1,bossRef=null,subT=0;const enemies=[];
+function mkEnemy(o){const g=new T.Group(),b=new T.Mesh(new T.BoxGeometry(o.s*.9,o.s*1.6,o.s*.6),new T.MeshStandardMaterial({color:o.col,emissive:0}));b.position.y=o.s*.9;b.castShadow=true;g.add(b);
+const hd=new T.Mesh(new T.SphereGeometry(o.s*.3,8,6),mat(0x111111));hd.position.y=o.s*2;g.add(hd);
+const e=Object.assign({g,b,st:"patrol",t:0,cd:0,wp:0,hpMax:o.hp,flash:0,stag:0,phase:1,bob:0},o);e.hp=o.hp;g.position.set(o.x,0,o.z);sc.add(g);enemies.push(e);return e}
+function spawnStalker(x,z,wps){return mkEnemy({x,z,wps,s:1,hp:50,spd:2.6,csp:4.6,sight:12,rng:1.7,dmg:12,wind:.55,rec:.9,col:0x3a1f22,r:.5})}
+function spawnBoss(){bossRef=mkEnemy({x:0,z:-66,wps:[[0,-60]],s:3,hp:240,spd:3,csp:3.8,sight:60,rng:5.2,dmg:30,wind:1.1,rec:1.5,col:0x4a1a3a,r:1.5,boss:1});bossRef.st="chase";$("boss").classList.remove("h")}
+function clearEnemies(){enemies.forEach(e=>sc.remove(e.g));enemies.length=0;bossRef=null;$("boss").classList.add("h")}
+function populate(){clearEnemies();if(!F.stalkerDead)spawnStalker(-20,-8,[[-20,-8],[-12,-14],[-24,-14],[-12,-4]]);if(F.dev&&!F.bossDead){spawnBoss();alarm=1}}
+function say(t,ms=4000){$("sub").textContent=t;subT=ms/1000}
+function objective(){return !F.map?"Cari pos keamanan dan ambil peta (kiri jalan).":!F.note?"Baca catatan penjaga di pos keamanan.":!F.power?"Pulihkan daya di terminal navigasi (kanan jalan). Kode ada di catatan.":!F.key?"Temukan kartu akses di Veterinary Wing (kiri-dalam, ada Stalker).":!F.door?"Buka pintu laboratorium di ujung jalan.":!F.dev?"Masuk lab dan aktifkan perangkat di tengah ruangan.":!F.bossDead?"Kalahkan The Final Subject.":!F.hasDev?"Ambil perangkat eksperimen.":"KABUR ke gerbang sebelum waktu habis!"}
+function refreshHUD(){$("obj").innerHTML="<b>Misi:</b> "+objective();$("hp").firstChild.style.width=Math.max(0,P.hp)+"%";$("st").firstChild.style.width=P.st+"%";if(bossRef)$("bb").firstChild.style.width=Math.max(0,bossRef.hp/bossRef.hpMax*100)+"%"}
+function save(){P.ck={x:P.x,z:P.z};try{localStorage.setItem(SAVE,JSON.stringify({v:1,F,ck:P.ck,time:ST.time,kills:ST.kills,set:{m:A.vol.m,a:A.vol.a,f:A.vol.f,sens}}))}catch(e){say("Penyimpanan gagal: progres mungkin tidak bertahan.")}}
+function loadSave(){try{const d=JSON.parse(localStorage.getItem(SAVE));return d&&d.v===1&&typeof d.F==="object"&&d.ck?d:null}catch(e){return null}}
+function syncItems(){items.map.m.visible=!F.map;items.note.m.visible=!F.note;items.key.m.visible=!F.key;door.m.visible=!F.door;
+const i=solids.indexOf(door);if(F.door&&i>=0)solids.splice(i,1);else if(!F.door&&i<0)solids.push(door);devMesh.visible=!F.hasDev}
+const inter=[
+{p:[-15,1.5],l:"Ambil peta keamanan",ok:()=>!F.map,go(){F.map=1;say("Zie: Peta lengkap. Tapi bagian laboratorium sengaja dihapus dari peta ini...");sfx(600,.2,"sine")}},
+{p:[-17.5,-1],l:"Baca catatan penjaga",ok:()=>!F.note,go(){F.note=1;say("Catatan: “Kode terminal navigasi: 7391. Jangan beri tahu pemilik...”",6000);sfx(500,.2,"sine")}},
+{p:[15,-2],l:"Pakai terminal navigasi",ok:()=>!F.power,go(){if(!F.note)say("Terminal butuh kode. Cari petunjuk di pos keamanan.");else openTerm()}},
+{p:[-20,-17],l:"Ambil kartu akses",ok:()=>!F.key,go(){F.key=1;say("Kartu akses laboratorium didapat.");sfx(700,.2,"sine");save()}},
+{p:[0,-27.5],l:"Buka pintu lab",ok:()=>!F.door,go(){if(!F.power)say("Pintu mati. Daya belum pulih.");else if(!F.key)say("Pintu butuh kartu akses.");else{F.door=1;syncItems();say("Pintu lab terbuka. Udara berubah dingin dan sunyi.");sfx(120,.6,"sawtooth");save()}}},
+{p:[0,-42],l:"Tekan tombol aktivasi",ok:()=>F.door&&!F.dev,go(){F.dev=1;alarm=1;sfx(300,.8,"sawtooth",.3);say("Alarm! Penguncian pintu mati... Final Subject lepas! (H: minta bantuan Claude)",5000);spawnBoss();spawnStalker(-8,-62,[[-8,-62]]).st="chase";save()}},
+{p:[0,-42],l:"Ambil perangkat eksperimen",ok:()=>F.bossDead&&!F.hasDev,go(){F.hasDev=1;syncItems();escT=120;alarm=1;$("timer").classList.remove("h");say("Fasilitas akan runtuh! Lari ke gerbang utama!");save()}},
+{p:[-11,-58],l:"Aktifkan panel A",ok:()=>bossRef&&bossRef.phase===3&&!bossRef.pA,go(){bossRef.pA=1;pk()}},
+{p:[11,-58],l:"Aktifkan panel B",ok:()=>bossRef&&bossRef.phase===3&&!bossRef.pB,go(){bossRef.pB=1;pk()}}];
+function pk(){sfx(900,.2,"sine");if(bossRef.pA&&bossRef.pB){bossRef.stag=10;bossRef.pA=bossRef.pB=0;say("Boss membuka kelemahan! SERANG sekarang!",3000)}else say("Satu panel aktif. Aktifkan yang satunya.")}
+let near=null;
+function useNear(){if(mode!=="play"||!near)return;near.go();refreshHUD()}
+let tcode="";
+function openTerm(){mode="term";tcode="";$("code").textContent="_ _ _ _";$("term").classList.remove("h");document.exitPointerLock&&document.exitPointerLock()}
+(function(){const p=$("pad");"123456789C0⌫".split("").forEach(k=>{const b=document.createElement("button");b.textContent=k;b.onclick=()=>{if(k==="C")tcode="";else if(k==="⌫")tcode=tcode.slice(0,-1);else if(tcode.length<4)tcode+=k;
+$("code").textContent=(tcode+"____").slice(0,4).split("").join(" ");sfx(800,.06,"square",.08);
+if(tcode.length===4){if(tcode==="7391"){F.power=1;$("term").classList.add("h");mode="play";say("Daya pulih. Sistem kunci pintu lab kini bisa dibuka.");sfx(500,.5,"sine");save();refreshHUD()}else{sfx(120,.3,"sawtooth");tcode="";$("code").textContent="SALAH"}}};p.appendChild(b)})})();
+$("bTx").onclick=()=>{$("term").classList.add("h");mode="play"};
+function hint(){const b=bossRef;say(!F.map||!F.note?"Claude: Pos keamanan di sisi kiri jalan. Cari peta dan catatan.":!F.power?"Claude: Kode dari catatan penjaga. Terminal ada di kanan jalan.":!F.key?"Claude: Kartu akses disimpan di Veterinary Wing. Hati-hati patroli Stalker.":!F.door?"Claude: Pintu lab di ujung jalan butuh daya dan kartu.":!F.dev?"Claude: Perangkat di tengah lab, tapi tombolnya melepas pengunci. Siapkan diri.":b?(b.phase===1?"Claude: Fase 1. Serangan boss punya aba-aba merah. Hindari, lalu serang saat ia pulih.":b.phase===2?"Claude: Fase 2. Ia lebih cepat dan memanggil bantuan.":"Claude: Fase 3. Aktifkan KEDUA panel di sisi ruangan agar boss terbuka 10 detik."):!F.hasDev?"Claude: Ambil perangkat di tengah ruangan.":"Claude: Lari ke gerbang di selatan, jangan melawan!",6000)}
+const K={};let mv={x:0,z:0},sprint=false,lockd=false;
+addEventListener("keydown",e=>{if(e.repeat)return;K[e.code]=1;if(mode==="paused"&&e.code==="Escape"&&!$("pause").classList.contains("h")){$("bRes").click();return}
+if(mode!=="play")return;if(e.code==="KeyE")useNear();if(e.code==="Space")dodge();if(e.code==="KeyH")hint();if(e.code==="Escape"||e.code==="KeyP")pauseG()});
+addEventListener("keyup",e=>K[e.code]=0);
+$("c").addEventListener("mousedown",e=>{audioInit();if(mode!=="play"||touch)return;if(!lockd&&$("c").requestPointerLock){$("c").requestPointerLock();return}attack()});
+document.addEventListener("pointerlockchange",()=>{lockd=document.pointerLockElement===$("c");if(!lockd&&mode==="play"&&!touch)pauseG()});
+addEventListener("mousemove",e=>{if(lockd&&mode==="play"){P.yaw-=e.movementX*.0025*sens;P.pitch=Math.max(-.2,Math.min(1.1,P.pitch+e.movementY*.0025*sens))}});
+const jT={id:null,cx:0,cy:0},cT={id:null,x:0,y:0};
+if(touch){$("mob").classList.remove("h");
+function jm(t){let dx=t.clientX-jT.cx,dy=t.clientY-jT.cy;const d=Math.hypot(dx,dy),m=55;if(d>m){dx=dx/d*m;dy=dy/d*m}$("knob").style.transform=`translate(${dx}px,${dy}px)`;mv.x=dx/m;mv.z=-dy/m}
+$("joy").addEventListener("touchstart",e=>{e.preventDefault();const t=e.changedTouches[0],r=$("joy").getBoundingClientRect();jT.id=t.identifier;jT.cx=r.left+r.width/2;jT.cy=r.top+r.height/2;jm(t)},{passive:false});
+addEventListener("touchmove",e=>{for(const t of e.changedTouches){if(t.identifier===jT.id){e.preventDefault();jm(t)}else if(t.identifier===cT.id&&mode==="play"){P.yaw-=(t.clientX-cT.x)*.006*sens;P.pitch=Math.max(-.2,Math.min(1.1,P.pitch+(t.clientY-cT.y)*.005*sens));cT.x=t.clientX;cT.y=t.clientY}}},{passive:false});
+const endT=e=>{for(const t of e.changedTouches){if(t.identifier===jT.id){jT.id=null;mv.x=mv.z=0;$("knob").style.transform=""}if(t.identifier===cT.id)cT.id=null}};
+addEventListener("touchend",endT);addEventListener("touchcancel",endT);
+$("c").addEventListener("touchstart",e=>{audioInit();const t=e.changedTouches[0];if(cT.id===null&&t.clientX>$("stage").getBoundingClientRect().left+$("stage").clientWidth*.35){cT.id=t.identifier;cT.x=t.clientX;cT.y=t.clientY}},{passive:true});
+const bt=(id,f,up)=>{$(id).addEventListener("touchstart",e=>{e.preventDefault();audioInit();f()},{passive:false});if(up)$(id).addEventListener("touchend",up)};
+bt("bA",attack);bt("bD",dodge);bt("bE",useNear);bt("bS",()=>sprint=true,()=>sprint=false);bt("bH",hint);bt("bP",pauseG)}
+function attack(){if(mode!=="play"||P.state!=="move"||P.st<8)return;P.state="attack";P.t=.4;P.atkT=1;P.st-=8;sfx(260,.12,"sawtooth",.1);P.hitDone=false}
+function dodge(){if(mode!=="play"||P.state==="dodge"||P.state==="hit"||P.st<20)return;P.state="dodge";P.t=.35;P.inv=.4;P.st-=20;
+let dx=mv.x+((K.KeyD?1:0)-(K.KeyA?1:0)),dz=mv.z+((K.KeyW?1:0)-(K.KeyS?1:0));if(!dx&&!dz)dz=-1;
+const s=Math.sin(P.yaw),c=Math.cos(P.yaw),wx=-s*dz+c*dx,wz=-c*dz-s*dx,l=Math.hypot(wx,wz)||1;P.vx=wx/l*11;P.vz=wz/l*11;sfx(180,.2,"sine",.1)}
+function hurt(d,e){if(P.inv>0||mode!=="play")return;P.hp-=d;P.inv=.7;P.state="hit";P.t=.3;P.atkT=0;sfx(110,.25,"sawtooth",.25);$("flash").style.opacity=.5;setTimeout(()=>$("flash").style.opacity=0,150);
+if(e){const dx=P.x-e.g.position.x,dz=P.z-e.g.position.z,l=Math.hypot(dx,dz)||1;P.vx=dx/l*5;P.vz=dz/l*5}
+if(P.hp<=0)die()}
+function die(){mode="dead";say("Ken tumbang... kembali ke checkpoint.",2500);setTimeout(()=>{P.hp=100;P.st=100;P.x=P.ck.x;P.z=P.ck.z;P.vx=P.vz=0;P.state="move";P.inv=2;if(F.hasDev)escT=120;populate();mode="play"},2200)}
+function playerHit(){const fx=-Math.sin(P.face),fz=-Math.cos(P.face);enemies.slice().forEach(e=>{const dx=e.g.position.x-P.x,dz=e.g.position.z-P.z,d=Math.hypot(dx,dz);if(d>2.6+e.r||(dx*fx+dz*fz)/(d||1)<.2)return;
+if(e.boss&&e.phase===3&&e.stag<=0){say("Serangan terpental! Aktifkan panel dulu (H: Claude)",2000);sfx(1000,.1,"square");return}
+e.hp-=25;e.flash=.15;sfx(380,.1,"square",.2);if(e.st==="patrol")e.st="chase";if(e.hp<=0)kill(e)})}
+function kill(e){sc.remove(e.g);const i=enemies.indexOf(e);if(i>=0)enemies.splice(i,1);ST.kills++;sfx(90,.6,"sawtooth",.3);
+if(e.boss){F.bossDead=1;alarm=.5;bossRef=null;$("boss").classList.add("h");say("The Final Subject runtuh. Ambil perangkat di tengah ruangan.",5000);enemies.forEach(x=>sc.remove(x.g));enemies.length=0;save()}
+else if(e.wps.length>1)F.stalkerDead=1;refreshHUD()}
+function collide(o,r){for(const s of solids){const cx=Math.max(s.x0,Math.min(o.x,s.x1)),cz=Math.max(s.z0,Math.min(o.z,s.z1)),dx=o.x-cx,dz=o.z-cz,d=Math.hypot(dx,dz);
+if(d<r){if(d>1e-4){o.x+=dx/d*(r-d);o.z+=dz/d*(r-d)}else o.x+=r}}o.x=Math.max(-29,Math.min(29,o.x));o.z=Math.max(-74,Math.min(30,o.z))}
+function updEnemy(e,dt){const p=e.g.position,dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz);e.cd-=dt;e.flash-=dt;
+if(e.boss){const ph=e.hp>e.hpMax*.66?1:e.hp>e.hpMax*.33?2:3;if(ph!==e.phase){e.phase=ph;say(ph===2?"Fase 2: Overload — sistem tak stabil!":"Fase 3: Final Shutdown — aktifkan kedua panel!",4000);sfx(70,1,"sawtooth",.3);
+if(ph===2){spawnStalker(-6,-64,[[-6,-64]]).st="chase";spawnStalker(6,-64,[[6,-64]]).st="chase"}}if(e.stag>0)e.stag-=dt}
+let sp=0,tx=P.x,tz=P.z;
+if(e.st==="patrol"){const w=e.wps[e.wp];tx=w[0];tz=w[1];sp=e.spd*.6;if(Math.hypot(tx-p.x,tz-p.z)<1)e.wp=(e.wp+1)%e.wps.length;if(d<e.sight)e.st="chase"}
+else if(e.st==="chase"){sp=e.csp*(e.boss&&e.phase===2?1.4:1);if(d<e.rng&&e.cd<=0){e.st="wind";e.t=e.wind*(e.boss&&e.phase>1?.8:1)}else if(d>e.sight*1.8&&!e.boss)e.st="patrol"}
+else if(e.st==="wind"){e.t-=dt;e.b.material.emissive.setHex(0xaa0000);if(e.t<=0){e.b.material.emissive.setHex(0);sfx(150,.2,"sawtooth",.2);if(d<e.rng+.6)hurt(e.dmg,e);e.st="rec";e.t=e.rec}}
+else if(e.st==="rec"){e.t-=dt;if(e.t<=0){e.st="chase";e.cd=1}}
+if(e.flash>0)e.b.material.emissive.setHex(0xffffff);else if(e.st!=="wind")e.b.material.emissive.setHex(e.boss&&e.stag>0?0x2244ff:0);
+if(sp){const ax=tx-p.x,az=tz-p.z,l=Math.hypot(ax,az)||1;p.x+=ax/l*sp*dt;p.z+=az/l*sp*dt;const o={x:p.x,z:p.z};collide(o,e.r);p.x=o.x;p.z=o.z;e.g.rotation.y=Math.atan2(-ax,-az)}
+else if(e.st!=="patrol")e.g.rotation.y=Math.atan2(-dx,-dz);
+e.bob+=dt*sp;e.b.position.y=e.s*.9+Math.sin(e.bob*3)*.05}
+let last=0,tm=0;
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;tm+=dt;
+if(subT>0){subT-=dt;if(subT<=0)$("sub").textContent=""}
+if(mode==="play")update(dt);else if(mode==="menu")P.yaw+=dt*.1;
+cam.position.set(P.x+Math.sin(P.yaw)*Math.cos(P.pitch)*5.5,1.8+Math.sin(P.pitch)*5.5,P.z+Math.cos(P.yaw)*Math.cos(P.pitch)*5.5);
+const co={x:cam.position.x,z:cam.position.z};collide(co,.3);cam.position.x=co.x;cam.position.z=co.z;cam.lookAt(P.x,1.5,P.z);R.render(sc,cam)}
+function update(dt){ST.time+=dt;
+const sprinting=(K.ShiftLeft||sprint)&&P.st>1;
+let ix=mv.x+((K.KeyD?1:0)-(K.KeyA?1:0)),iz=mv.z+((K.KeyW?1:0)-(K.KeyS?1:0));const il=Math.hypot(ix,iz);if(il>1){ix/=il;iz/=il}
+P.inv-=dt;P.t-=dt;if(P.atkT>0)P.atkT-=dt*2.5;
+if(P.state==="attack"){if(!P.hitDone&&P.t<.25){P.hitDone=true;playerHit()}if(P.t<=0)P.state="move"}
+else if((P.state==="hit"||P.state==="dodge")&&P.t<=0)P.state="move";
+if(P.state==="move"||P.state==="attack"){const sp=(sprinting&&il>.1?7:4.2)*(P.state==="attack"?.4:1),s=Math.sin(P.yaw),c=Math.cos(P.yaw);
+const a=Math.min(1,dt*(il>0?12:9));P.vx+=((-s*iz+c*ix)*sp-P.vx)*a;P.vz+=((-c*iz-s*ix)*sp-P.vz)*a;
+if(il>.1&&P.state==="move"){const tgt=Math.atan2(-P.vx,-P.vz);let df=tgt-P.face;while(df>Math.PI)df-=2*Math.PI;while(df<-Math.PI)df+=2*Math.PI;P.face+=df*Math.min(1,dt*14);if(sprinting)P.st=Math.max(0,P.st-14*dt)}}
+if(P.state==="hit")P.vx*=.9,P.vz*=.9;
+if(!(sprinting&&il>.1))P.st=Math.min(100,P.st+12*dt);
+P.x+=P.vx*dt;P.z+=P.vz*dt;collide(P,.45);
+ken.position.set(P.x,0,P.z);ken.rotation.y=P.face;ken.scale.y=P.state==="dodge"?.7:1;animate(ken,Math.hypot(P.vx,P.vz),tm,P.state==="attack"?P.atkT:0);
+const zp=zie.position,zd=Math.hypot(P.x-zp.x,P.z-zp.z);
+if(zd>2.6){const v=Math.min(zd*1.6,7.5);zp.x+=(P.x-zp.x)/zd*v*dt;zp.z+=(P.z-zp.z)/zd*v*dt;const zo={x:zp.x,z:zp.z};collide(zo,.4);zp.x=zo.x;zp.z=zo.z;zie.rotation.y=Math.atan2(-(P.x-zp.x),-(P.z-zp.z))}
+if(zd>25)zp.set(P.x+2,0,P.z+2);
+animate(zie,zd>2.8?Math.min(zd*1.5,7):0,tm+1,0);
+for(const k in items)items[k].m.position.y=1.5+Math.sin(tm*2)*.1;devMesh.rotation.y+=dt;devMesh.position.y=1.6+Math.sin(tm*2)*.1;
+near=null;let bd=2.6;for(const it of inter){if(!it.ok())continue;const d=Math.hypot(P.x-it.p[0],P.z-it.p[1]);if(d<bd){bd=d;near=it}}
+const pr=$("prompt");if(near){pr.textContent=(touch?"[Pakai] ":"[E] ")+near.l;pr.classList.remove("h")}else pr.classList.add("h");
+for(const e of enemies.slice())updEnemy(e,dt);
+if(alarm)alarmL.intensity=alarm*(1+Math.sin(tm*8))*1.6;
+lab.intensity=1.1+Math.sin(tm*13)*.15;
+if(F.hasDev){escT-=dt;$("timer").textContent=Math.ceil(escT);if(escT<=0){say("Waktu habis! Mengulang dari checkpoint.",2500);die();escT=120}
+if(P.z>=22&&Math.abs(P.x)<4)win()}
+refreshHUD()}
+function win(){mode="end";clearEnemies();["hud","timer","mob","prompt"].forEach(i=>$(i).classList.add("h"));document.exitPointerLock&&document.exitPointerLock();
+const m=Math.floor(ST.time/60),s=Math.floor(ST.time%60),cl=F.map+F.note+F.key;$("stats").textContent=`Durasi ${m}m ${s}d · Petunjuk ditemukan ${cl}/3 · Musuh dikalahkan ${ST.kills}`;$("end").classList.remove("h");sfx(520,1,"sine",.3);try{localStorage.removeItem(SAVE)}catch(e){}}
+function resetF(){Object.keys(F).forEach(k=>F[k]=0);Object.assign(P,{x:0,z:30,hp:100,st:100,vx:0,vz:0,yaw:0,pitch:.35,state:"move",inv:0,face:Math.PI});ST.time=0;ST.kills=0;escT=0;alarm=0;P.ck={x:0,z:30}}
+function begin(){audioInit();audioVol();["menu","end"].forEach(i=>$(i).classList.add("h"));$("hud").classList.remove("h");$("timer").classList.add("h");if(touch)$("mob").classList.remove("h");
+syncItems();populate();mode="play";zie.position.set(P.x+2,0,P.z+2);if(F.hasDev){$("timer").classList.remove("h");escT=120}refreshHUD();
+say(F.map?"Lanjutkan penyelidikan.":"Zie: Claude bilang peta ada di pos keamanan, kiri jalan. WASD gerak, E pakai. Ada petunjuk: H.",6000)}
+$("bNew").onclick=()=>{resetF();begin();save()};
+$("bCont").onclick=()=>{const d=loadSave();if(!d){say("Belum ada data tersimpan.",2500);return}resetF();Object.assign(F,d.F);P.x=d.ck.x;P.z=d.ck.z;P.ck=d.ck;ST.time=d.time||0;ST.kills=d.kills||0;
+if(d.set){A.vol.m=d.set.m;A.vol.a=d.set.a;A.vol.f=d.set.f;sens=d.set.sens||1}begin()};
+$("bAgain").onclick=()=>{resetF();begin();save()};
+let setFrom="menu";
+function openSet(f){setFrom=f;$("set").classList.remove("h");$(f).classList.add("h");$("vM").value=A.vol.m;$("vA").value=A.vol.a;$("vF").value=A.vol.f;$("vS").value=sens}
+$("bSet").onclick=()=>openSet("menu");$("bSet2").onclick=()=>openSet("pause");
+$("bBack").onclick=()=>{$("set").classList.add("h");$(setFrom).classList.remove("h");const d=loadSave();if(d){d.set={m:A.vol.m,a:A.vol.a,f:A.vol.f,sens};try{localStorage.setItem(SAVE,JSON.stringify(d))}catch(e){}}};
+[["vM","m"],["vA","a"],["vF","f"]].forEach(([id,k])=>$(id).oninput=e=>{A.vol[k]=+e.target.value;audioVol()});
+$("vS").oninput=e=>sens=+e.target.value;
+function setAR(v){$("stage").classList.toggle("p",v==="916");$("vR").value=v;rs();try{localStorage.setItem("kenzie_ar",v)}catch(e){}}
+$("vR").onchange=e=>setAR(e.target.value);
+{let v="169";try{v=localStorage.getItem("kenzie_ar")||"169"}catch(e){}setAR(v==="916"?"916":"169")}
+function pauseG(){if(mode!=="play")return;mode="paused";$("pause").classList.remove("h");document.exitPointerLock&&document.exitPointerLock()}
+$("bRes").onclick=()=>{$("pause").classList.add("h");mode="play"};
+$("bCk").onclick=()=>{$("pause").classList.add("h");P.hp=100;P.x=P.ck.x;P.z=P.ck.z;P.vx=P.vz=0;populate();mode="play"};
+$("bMenu").onclick=()=>{["pause","hud","mob","prompt","timer"].forEach(i=>$(i).classList.add("h"));clearEnemies();mode="menu";$("menu").classList.remove("h");$("bCont").style.display=loadSave()?"":"none"};
+document.addEventListener("contextmenu",e=>e.preventDefault());
+document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseG()});
+if(!loadSave())$("bCont").style.display="none";
+syncItems();zie.position.set(2,0,32);requestAnimationFrame(t=>{last=t;frame(t)});
+</script></body></html>
